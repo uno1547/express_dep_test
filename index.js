@@ -23,7 +23,7 @@ app.get('/api/hello', (req, res) => {
   res.json({ message: 'Hello from API!' });
 });
 
-// 데이터 반환 API
+// DB연결 API
 app.get('/api/data', async (req, res) => {
   try {
     const result = await pool.query('SELECT NOW()');
@@ -31,6 +31,56 @@ app.get('/api/data', async (req, res) => {
   } catch (err) {
     console.error('Database query error:', err);
     res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// 테이블 생성 API
+app.get('/api/create-table', async (req, res) => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(50) NOT NULL,
+        student_id VARCHAR(20) UNIQUE NOT NULL
+      )
+    `);
+    res.send('users 테이블 생성 완료');
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('테이블 생성 실패');
+  }
+});
+
+// 학생 데이터 삽입 API
+app.get('/api/insert-users', async (req, res) => {
+  try {
+    const users = [
+      ['김윤오', '20204161'],
+      ['이동환', '20204170'],
+      ['유제영', '20204169']
+    ];
+
+    for (const [name, student_id] of users) {
+      await pool.query(
+        'INSERT INTO users (name, student_id) VALUES ($1, $2) ON CONFLICT (student_id) DO NOTHING',
+        [name, student_id]
+      );
+    }
+
+    res.send('학생 데이터 삽입 완료');
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('데이터 삽입 실패');
+  }
+});
+
+app.get('/api/users', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM users');
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('조회 실패');
   }
 });
 
